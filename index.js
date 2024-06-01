@@ -24,6 +24,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const usersCollection = client.db("task-rabbit").collection("users");
+    const tasksCollection = client.db("task-rabbit").collection("tasks");
     // when a user register a account give point and store user data
     app.post("/register", async (req, res) => {
       const { name, email, role, image_url } = req.body;
@@ -61,10 +62,36 @@ async function run() {
       const result = await usersCollection.insertOne(newUser);
       res.send(result);
     });
+
     //find user role from database
     app.get("/user/:email", async (req, res) => {
       const email = req.params.email;
       const result = await usersCollection.findOne({ email });
+      res.send(result);
+    });
+    // reduce a coin
+    app.patch("/user/reduce-coins/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const { total_cost } = req.body;
+      const findUser = await usersCollection.findOne({ email });
+      console.log(typeof findUser.coins);
+      console.log(typeof total_cost);
+      console.log(total_cost);
+      const updatedCoins = findUser.coins - parseFloat(total_cost);
+      const updatedDoc = {
+        $set: {
+          coins: updatedCoins,
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+    // add a new tasks
+    app.post("/tasks", async (req, res) => {
+      const tasks = req.body;
+      // console.log(tasks);
+      const result = await tasksCollection.insertOne(tasks);
       res.send(result);
     });
     // Send a ping to confirm a successful connection
