@@ -70,30 +70,49 @@ async function run() {
       res.send(result);
     });
     // reduce a coin
-    app.patch("/user/reduce-coins/:email", async (req, res) => {
+    // app.patch("/user/reduce-coins/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   const filter = { email: email };
+    //   const { total_cost } = req.body;
+    //   const findUser = await usersCollection.findOne({ email });
+    //   console.log(typeof findUser.coins);
+    //   console.log(typeof total_cost);
+    //   console.log(total_cost);
+    //   const updatedCoins = findUser.coins - parseFloat(total_cost);
+    //   const updatedDoc = {
+    //     $set: {
+    //       coins: updatedCoins,
+    //     },
+    //   };
+    //   const result = await usersCollection.updateOne(filter, updatedDoc);
+    //   res.send(result);
+    // });
+    // // add a new tasks
+    // app.post("/tasks", async (req, res) => {
+    //   const tasks = req.body;
+    //   // console.log(tasks);
+    //   const result = await tasksCollection.insertOne(tasks);
+    //   res.send(result);
+    // });
+    app.post("/test/:email", async (req, res) => {
+      const { total_cost, ...tasks } = req.body;
+      console.log(tasks, "i find total cost ", total_cost);
+
+      const insertDoc = await tasksCollection.insertOne(tasks);
+      //update a user
       const email = req.params.email;
       const filter = { email: email };
-      const { total_cost } = req.body;
-      const findUser = await usersCollection.findOne({ email });
-      console.log(typeof findUser.coins);
-      console.log(typeof total_cost);
-      console.log(total_cost);
-      const updatedCoins = findUser.coins - parseFloat(total_cost);
+      const findUser = await usersCollection.findOne(filter);
+      const updatedCoins = findUser.coins - total_cost;
       const updatedDoc = {
         $set: {
           coins: updatedCoins,
         },
       };
       const result = await usersCollection.updateOne(filter, updatedDoc);
-      res.send(result);
+      res.send({ insertDoc, result });
     });
-    // add a new tasks
-    app.post("/tasks", async (req, res) => {
-      const tasks = req.body;
-      // console.log(tasks);
-      const result = await tasksCollection.insertOne(tasks);
-      res.send(result);
-    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
