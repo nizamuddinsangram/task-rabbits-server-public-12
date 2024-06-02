@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = process.env.PORT || 8000;
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 app.use(
   cors({
@@ -73,31 +74,7 @@ async function run() {
       const result = await usersCollection.findOne({ email });
       res.send(result);
     });
-    // reduce a coin
-    // app.patch("/user/reduce-coins/:email", async (req, res) => {
-    //   const email = req.params.email;
-    //   const filter = { email: email };
-    //   const { total_cost } = req.body;
-    //   const findUser = await usersCollection.findOne({ email });
-    //   console.log(typeof findUser.coins);
-    //   console.log(typeof total_cost);
-    //   console.log(total_cost);
-    //   const updatedCoins = findUser.coins - parseFloat(total_cost);
-    //   const updatedDoc = {
-    //     $set: {
-    //       coins: updatedCoins,
-    //     },
-    //   };
-    //   const result = await usersCollection.updateOne(filter, updatedDoc);
-    //   res.send(result);
-    // });
-    // // add a new tasks
-    // app.post("/tasks", async (req, res) => {
-    //   const tasks = req.body;
-    //   // console.log(tasks);
-    //   const result = await tasksCollection.insertOne(tasks);
-    //   res.send(result);
-    // });
+
     app.post("/tasks/:email", async (req, res) => {
       const { total_cost, ...tasks } = req.body;
       // console.log(tasks, "i find total cost ", total_cost);
@@ -151,6 +128,20 @@ async function run() {
       );
       res.send({ result, updateCoinsData });
     });
+    //create a payment intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -169,3 +160,29 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`running rabbit server on port ${port}`);
 });
+
+// reduce a coin
+// app.patch("/user/reduce-coins/:email", async (req, res) => {
+//   const email = req.params.email;
+//   const filter = { email: email };
+//   const { total_cost } = req.body;
+//   const findUser = await usersCollection.findOne({ email });
+//   console.log(typeof findUser.coins);
+//   console.log(typeof total_cost);
+//   console.log(total_cost);
+//   const updatedCoins = findUser.coins - parseFloat(total_cost);
+//   const updatedDoc = {
+//     $set: {
+//       coins: updatedCoins,
+//     },
+//   };
+//   const result = await usersCollection.updateOne(filter, updatedDoc);
+//   res.send(result);
+// });
+// // add a new tasks
+// app.post("/tasks", async (req, res) => {
+//   const tasks = req.body;
+//   // console.log(tasks);
+//   const result = await tasksCollection.insertOne(tasks);
+//   res.send(result);
+// });
