@@ -186,7 +186,9 @@ async function run() {
     });
     //find all tasks task-quantity is getter than o worker
     app.get("/tasks", async (req, res) => {
-      const result = await tasksCollection.find().toArray();
+      const result = await tasksCollection
+        .find({ task_quantity: { $gt: 0 } })
+        .toArray();
       res.send(result);
     });
 
