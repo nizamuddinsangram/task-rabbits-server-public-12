@@ -30,6 +30,7 @@ async function run() {
     await client.connect();
     const usersCollection = client.db("task-rabbit").collection("users");
     const tasksCollection = client.db("task-rabbit").collection("tasks");
+    const paymentCollection = client.db("task-rabbit").collection("payments");
     // when a user register a account give point and store user data
     app.post("/register", async (req, res) => {
       const { name, email, role, image_url } = req.body;
@@ -140,6 +141,53 @@ async function run() {
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+    // insert data payment collection
+    app.post("/payment-info", async (req, res) => {
+      const { email, name, amount, transactionId } = req.body;
+      let coins = 0;
+      if (amount === 1) {
+        coins = 10;
+      } else if (amount === 9) {
+        coins = 100;
+      } else if (amount === 19) {
+        coins = 500;
+      } else if (amount === 39) {
+        coins = 1000;
+      } else {
+        return res.status(400).send({ message: "Invalid amount" });
+      }
+      //add paymentInfo to payment collection
+      const paymentInfo = {
+        name: name,
+        email: email,
+        amount: amount,
+        coins: coins,
+        transactionId: transactionId,
+        date: new Date(),
+      };
+      //insert data form payment collection
+      const paymentResult = await paymentCollection.insertOne(paymentInfo);
+      // update data from user collecion
+      const filter = { email: email };
+      const updatedDoc = {
+        $inc: {
+          coins: coins,
+        },
+      };
+      const updatedResult = await usersCollection.updateOne(filter, updatedDoc);
+      res.send({ paymentResult, updatedResult });
+    });
+    app.get("/payment-info/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    });
+    //find all tasks task-quantity is getter than o worker
+    app.get("/tasks", async (req, res) => {
+      const result = await tasksCollection.find().toArray();
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
