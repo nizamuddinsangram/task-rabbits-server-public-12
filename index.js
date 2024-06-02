@@ -4,10 +4,14 @@ const app = express();
 const cors = require("cors");
 const port = process.env.PORT || 8000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+  })
+);
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vshvqji.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -94,9 +98,9 @@ async function run() {
     //   const result = await tasksCollection.insertOne(tasks);
     //   res.send(result);
     // });
-    app.post("/test/:email", async (req, res) => {
+    app.post("/tasks/:email", async (req, res) => {
       const { total_cost, ...tasks } = req.body;
-      console.log(tasks, "i find total cost ", total_cost);
+      // console.log(tasks, "i find total cost ", total_cost);
 
       const insertDoc = await tasksCollection.insertOne(tasks);
       //update a user
@@ -112,7 +116,41 @@ async function run() {
       const result = await usersCollection.updateOne(filter, updatedDoc);
       res.send({ insertDoc, result });
     });
-
+    app.get("/tasks/:email", async (req, res) => {
+      const email = req.params.email;
+      const findTasks = await tasksCollection
+        .find({
+          "task_creator.creator_email": email,
+        })
+        .sort({ "task_creator.current_time": -1 })
+        .toArray();
+      res.send(findTasks);
+    });
+    app.delete("/tasks/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      // find the tasks in our tasks collecton
+      const task = await tasksCollection.findOne(query);
+      // find data in our tasks collection as we need
+      const email = task.task_creator.creator_email;
+      const task_quantity = task.task_quantity;
+      const payable_amount = task.payable_amount;
+      const coinsToAdd = task_quantity * payable_amount;
+      // delete data from our tasks collection
+      const result = await tasksCollection.deleteOne(query);
+      //update my users collection data
+      const filter = { email: email };
+      const updatedDoc = {
+        $inc: {
+          coins: coinsToAdd,
+        },
+      };
+      const updateCoinsData = await usersCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send({ result, updateCoinsData });
+    });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
