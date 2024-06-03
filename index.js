@@ -257,6 +257,13 @@ async function run() {
       const withdraw = await withdrawCollection.insertOne(newWithdrawal);
       res.send({ updateUserCoins, withdraw });
     });
+    //pending submission find our database [worker home page]
+    app.get("/submissionApprove/:workerEmail", async (req, res) => {
+      const email = req.params.workerEmail;
+      const query = { "workerInfo.worker_email": email, status: "approve" };
+      const result = await submissionCollection.find(query).toArray();
+      res.send(result);
+    });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
