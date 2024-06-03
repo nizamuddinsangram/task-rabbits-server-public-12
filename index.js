@@ -79,6 +79,19 @@ async function run() {
       const result = await usersCollection.findOne({ email });
       res.send(result);
     });
+    //find worker role from database [admin Manage users ]
+    app.get("/worker", async (req, res) => {
+      const query = { role: "Worker" };
+      const workers = await usersCollection.find(query).toArray();
+      res.send(workers);
+    });
+    //delete user admin use her/his power [admin manage routes]
+    app.delete("/worker/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
 
     app.post("/tasks/:email", async (req, res) => {
       const { total_cost, ...tasks } = req.body;
