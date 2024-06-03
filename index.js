@@ -92,7 +92,19 @@ async function run() {
       const result = await usersCollection.deleteOne(query);
       res.send(result);
     });
-
+    //update user role by admin [admin manageUser]
+    app.patch("/worker/:id", async (req, res) => {
+      const userId = req.params.id;
+      const { role } = req.body;
+      console.log(role);
+      const result = await usersCollection.updateOne(
+        {
+          _id: new ObjectId(userId),
+        },
+        { $set: { role } }
+      );
+      res.send(result);
+    });
     app.post("/tasks/:email", async (req, res) => {
       const { total_cost, ...tasks } = req.body;
       // console.log(tasks, "i find total cost ", total_cost);
