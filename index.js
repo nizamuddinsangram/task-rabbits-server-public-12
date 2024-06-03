@@ -208,9 +208,17 @@ async function run() {
       const result = await submissionCollection.insertOne(submissionData);
       res.send(result);
     });
-    app.get("/submission/:email", async (req, res) => {
-      const email = req.params.email;
+    //some changes this api email changes worker email
+    app.get("/submission/:workerEmail", async (req, res) => {
+      const email = req.params.workerEmail;
       const query = { "workerInfo.worker_email": email };
+      const result = await submissionCollection.find(query).toArray();
+      res.send(result);
+    });
+    //find all submission by email any one can request to do thi work[Task Creator Home section ]
+    app.get("/pendingSubmissions/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { creator_email: email };
       const result = await submissionCollection.find(query).toArray();
       res.send(result);
     });
