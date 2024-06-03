@@ -31,6 +31,7 @@ async function run() {
     const usersCollection = client.db("task-rabbit").collection("users");
     const tasksCollection = client.db("task-rabbit").collection("tasks");
     const paymentCollection = client.db("task-rabbit").collection("payments");
+    const withdrawCollection = client.db("task-rabbit").collection("withdraws");
     const submissionCollection = client
       .db("task-rabbit")
       .collection("submissions");
@@ -203,9 +204,50 @@ async function run() {
     //post data my submission collection
     app.post("/submission", async (req, res) => {
       const submissionData = req.body;
-      console.log(submissionData);
+      // console.log(submissionData);
       const result = await submissionCollection.insertOne(submissionData);
       res.send(result);
+    });
+    app.get("/submission/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { "workerInfo.worker_email": email };
+      const result = await submissionCollection.find(query).toArray();
+      res.send(result);
+    });
+    //post data withdraw collection wow
+    app.post("/withdraw", async (req, res) => {
+      const {
+        worker_email,
+        worker_name,
+        withdraw_coin,
+        withdraw_amount,
+        payment_system,
+        account_number,
+        withdraw_time,
+      } = req.body;
+      const query = { email: worker_email };
+      //find user from usersCollections
+      const findUser = await usersCollection.findOne(query);
+      const newWithdrawal = {
+        worker_email,
+        worker_name,
+        withdraw_coin,
+        withdraw_amount,
+        payment_system,
+        account_number,
+        withdraw_time,
+      };
+      const updatedDoc = {
+        $inc: { coins: -withdraw_coin },
+      };
+      //update user coins from users colleciton
+      const updateUserCoins = await usersCollection.updateOne(
+        query,
+        updatedDoc
+      );
+      //insert withdraw history from withdraw collection
+      const withdraw = await withdrawCollection.insertOne(newWithdrawal);
+      res.send({ updateUserCoins, withdraw });
     });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
