@@ -218,51 +218,78 @@ async function run() {
     //find all submission by email any one can request to do thi work[Task Creator Home section ]
     app.get("/pendingSubmissions/:email", async (req, res) => {
       const email = req.params.email;
-      const query = { creator_email: email };
+      const query = { creator_email: email, status: "pending" };
       const result = await submissionCollection.find(query).toArray();
       res.send(result);
     });
     //post data withdraw collection wow
     app.post("/withdraw", async (req, res) => {
-      const {
-        worker_email,
-        worker_name,
-        withdraw_coin,
-        withdraw_amount,
-        payment_system,
-        account_number,
-        withdraw_time,
-      } = req.body;
-      const query = { email: worker_email };
-      //find user from usersCollections
-      const findUser = await usersCollection.findOne(query);
-      const newWithdrawal = {
-        worker_email,
-        worker_name,
-        withdraw_coin,
-        withdraw_amount,
-        payment_system,
-        account_number,
-        withdraw_time,
-      };
-      const updatedDoc = {
-        $inc: { coins: -withdraw_coin },
-      };
-      //update user coins from users colleciton
-      const updateUserCoins = await usersCollection.updateOne(
-        query,
-        updatedDoc
-      );
+      // const {
+
+      //   worker_email,
+      //   worker_name,
+      //   withdraw_coin,
+      //   withdraw_amount,
+      //   payment_system,
+      //   account_number,
+      //   withdraw_time,
+      // } = req.body;
+      // const query = { email: worker_email };
+      // //find user from usersCollections
+      // const findUser = await usersCollection.findOne(query);
+      // const newWithdrawal = {
+      //   worker_email,
+      //   worker_name,
+      //   withdraw_coin,
+      //   withdraw_amount,
+      //   payment_system,
+      //   account_number,
+      //   withdraw_time,
+      // };
+      // const updatedDoc = {
+      //   $inc: { coins: -withdraw_coin },
+      // };
+      // //update user coins from users colleciton
+      // const updateUserCoins = await usersCollection.updateOne(
+      //   query,
+      //   updatedDoc
+      // );
       //insert withdraw history from withdraw collection
+      const newWithdrawal = req.body;
       const withdraw = await withdrawCollection.insertOne(newWithdrawal);
-      res.send({ updateUserCoins, withdraw });
+      res.send({ withdraw });
     });
     //pending submission find our database [worker home page]
+    //i came mosque work this route insallah
     app.get("/submissionApprove/:workerEmail", async (req, res) => {
       const email = req.params.workerEmail;
       const query = { "workerInfo.worker_email": email, status: "approve" };
       const result = await submissionCollection.find(query).toArray();
       res.send(result);
+    });
+    //admin action related api
+    //find worker withdraw data from withdraw collection
+    app.get("/withDrawConfirmAdmin", async (req, res) => {
+      const result = await withdrawCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.delete("/approveWithdraw/:id", async (req, res) => {
+      const id = req.params.id;
+      const withdrawRequest = await withdrawCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      //admin click on payment button and delete this from witdrow collectio
+      //and update user collection
+      //update coins form user collection
+      const userCoinsUpdate = await usersCollection.updateOne(
+        { email: withdrawRequest.worker_email },
+        { $inc: { coins: -withdrawRequest.withdraw_coin } }
+      );
+      const deleteResult = await withdrawCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send({ userCoinsUpdate, deleteResult });
     });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
