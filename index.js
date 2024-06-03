@@ -31,6 +31,9 @@ async function run() {
     const usersCollection = client.db("task-rabbit").collection("users");
     const tasksCollection = client.db("task-rabbit").collection("tasks");
     const paymentCollection = client.db("task-rabbit").collection("payments");
+    const submissionCollection = client
+      .db("task-rabbit")
+      .collection("submissions");
     // when a user register a account give point and store user data
     app.post("/register", async (req, res) => {
       const { name, email, role, image_url } = req.body;
@@ -197,7 +200,13 @@ async function run() {
       const result = await tasksCollection.findOne(query);
       res.send(result);
     });
-
+    //post data my submission collection
+    app.post("/submission", async (req, res) => {
+      const submissionData = req.body;
+      console.log(submissionData);
+      const result = await submissionCollection.insertOne(submissionData);
+      res.send(result);
+    });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
