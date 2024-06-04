@@ -72,6 +72,15 @@ async function run() {
       const result = await usersCollection.insertOne(newUser);
       res.send(result);
     });
+    //top earner section [Top Earner section ]
+    app.get("/top-earner", async (req, res) => {
+      const topEarner = await usersCollection
+        .find({ role: "Worker" })
+        .sort({ coins: -1 })
+        .limit(6)
+        .toArray();
+      res.send(topEarner);
+    });
 
     //find user role from database
     app.get("/user/:email", async (req, res) => {
@@ -316,6 +325,7 @@ async function run() {
       });
       res.send({ userCoinsUpdate, deleteResult });
     });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
