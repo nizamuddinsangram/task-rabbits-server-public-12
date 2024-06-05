@@ -4,6 +4,7 @@ const app = express();
 const cors = require("cors");
 const port = process.env.PORT || 8000;
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
+const jwt = require("jsonwebtoken");
 
 app.use(
   cors({
@@ -35,6 +36,42 @@ async function run() {
     const submissionCollection = client
       .db("task-rabbit")
       .collection("submissions");
+    //jwt token related api
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+        expiresIn: "50h",
+      });
+      res.send({ token });
+    });
+    //verify token
+    const verifyToken = (req, res, next) => {
+      // console.log(req.headers.authorization);
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "unauthorized access" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
+    //verify admin
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+    //jwt token related api
+
     // when a user register a account give point and store user data
     app.post("/register", async (req, res) => {
       const { name, email, role, image_url } = req.body;
@@ -84,8 +121,11 @@ async function run() {
     });
 
     //find user role from database
-    app.get("/user/:email", async (req, res) => {
+    app.get("/user/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "unauthorized access" });
+      }
       const result = await usersCollection.findOne({ email });
       res.send(result);
     });
@@ -172,7 +212,7 @@ async function run() {
     app.patch("/approve/:id", async (req, res) => {
       const id = req.params.id;
       const { status, payment_amount, worker_email } = req.body;
-      console.log(status, payment_amount, worker_email);
+      // console.log(status, payment_amount, worker_email);
 
       const query = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -335,10 +375,17 @@ async function run() {
     });
     //admin action related api
     //find worker withdraw data from withdraw collection
-    app.get("/withDrawConfirmAdmin", async (req, res) => {
-      const result = await withdrawCollection.find().toArray();
-      res.send(result);
-    });
+    //---------------token test-----------------------
+    app.get(
+      "/withDrawConfirmAdmin",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        console.log("token form 366 line=>", req.headers.authorization);
+        const result = await withdrawCollection.find().toArray();
+        res.send(result);
+      }
+    );
 
     app.delete("/approveWithdraw/:id", async (req, res) => {
       const id = req.params.id;
