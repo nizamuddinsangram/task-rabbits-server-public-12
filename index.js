@@ -38,6 +38,7 @@ async function run() {
     // when a user register a account give point and store user data
     app.post("/register", async (req, res) => {
       const { name, email, role, image_url } = req.body;
+
       const existingUser = await usersCollection.findOne({ email });
       if (existingUser) {
         return res.status(400).send({ message: "Email already in use" });
@@ -166,6 +167,37 @@ async function run() {
         updatedDoc
       );
       res.send({ result, updateCoinsData });
+    });
+    //[task creator home page approve and reject button ]
+    app.patch("/approve/:id", async (req, res) => {
+      const id = req.params.id;
+      const { status, payment_amount, worker_email } = req.body;
+      console.log(status, payment_amount, worker_email);
+
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status,
+        },
+      };
+      const result = await submissionCollection.updateOne(query, updatedDoc);
+      //update worker coins ammount
+      if (status === "approve") {
+        const workerEmail = { email: worker_email };
+        const updatedCoins = {
+          $inc: { coins: payment_amount },
+        };
+        const updatedWorkerCoins = await usersCollection.updateOne(
+          workerEmail,
+          updatedCoins
+        );
+      }
+      res.send(result);
+    });
+    //[show all tasks admin and delete task if she/he want ]
+    app.get("/adminTasks", async (req, res) => {
+      const tasks = await tasksCollection.find().toArray();
+      res.send(tasks);
     });
     //create a payment intent
     app.post("/create-payment-intent", async (req, res) => {
