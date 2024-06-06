@@ -353,6 +353,30 @@ async function run() {
       const result = await submissionCollection.find(query).toArray();
       res.send(result);
     });
+    app.get("/taskCreatorsStates", async (req, res) => {
+      const email = req.query.email;
+      const user = await usersCollection.findOne({ email: email });
+      const coins = user?.coins;
+      const submissions = await submissionCollection
+        .find({ "workerInfo.worker_email": email })
+        .toArray();
+      const totalSubmission = submissions.length;
+
+      // Filter the approved submissions
+      const approvedSubmissions = submissions.filter(
+        (submission) => submission.status === "approve"
+      );
+
+      // Reduce the approved submissions to calculate total earnings
+      const totalEarning = approvedSubmissions.reduce(
+        (sum, submission) => sum + submission.payment_amount,
+        0
+      );
+      // const totalEarning = submissions
+      //   .filter((submission) => submission.status === "approved")
+      //   .reduce((sum, submission) => sum + submission.payment_amount, 0);
+      res.send({ coins, totalSubmission, totalEarning });
+    });
     //post data withdraw collection wow
     app.post("/withdraw", async (req, res) => {
       // const {
