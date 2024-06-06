@@ -239,6 +239,31 @@ async function run() {
       const tasks = await tasksCollection.find().toArray();
       res.send(tasks);
     });
+    //state or analayic from [admin home ]
+    app.get("/admin-stats", async (req, res) => {
+      const users = await usersCollection.estimatedDocumentCount();
+      const payment = await paymentCollection.estimatedDocumentCount();
+      const result = await usersCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalCoins: {
+                $sum: "$coins",
+              },
+            },
+          },
+        ])
+        .toArray();
+      const coins = result.length > 0 ? result[0].totalCoins : 0;
+      res.send({ users, payment, coins });
+    });
+    app.get("/adminTasksDelete/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await tasksCollection.deleteOne(query);
+      res.send(result);
+    });
     //create a payment intent
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
@@ -381,7 +406,7 @@ async function run() {
       verifyToken,
       verifyAdmin,
       async (req, res) => {
-        console.log("token form 366 line=>", req.headers.authorization);
+        // console.log("token form 366 line=>", req.headers.authorization);
         const result = await withdrawCollection.find().toArray();
         res.send(result);
       }
