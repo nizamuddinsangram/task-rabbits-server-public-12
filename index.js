@@ -353,7 +353,8 @@ async function run() {
       const result = await submissionCollection.find(query).toArray();
       res.send(result);
     });
-    app.get("/taskCreatorsStates", async (req, res) => {
+
+    app.get("/workerStates", async (req, res) => {
       const email = req.query.email;
       const user = await usersCollection.findOne({ email: email });
       const coins = user?.coins;
@@ -361,12 +362,10 @@ async function run() {
         .find({ "workerInfo.worker_email": email })
         .toArray();
       const totalSubmission = submissions.length;
-
       // Filter the approved submissions
       const approvedSubmissions = submissions.filter(
         (submission) => submission.status === "approve"
       );
-
       // Reduce the approved submissions to calculate total earnings
       const totalEarning = approvedSubmissions.reduce(
         (sum, submission) => sum + submission.payment_amount,
@@ -452,6 +451,27 @@ async function run() {
         _id: new ObjectId(id),
       });
       res.send({ userCoinsUpdate, deleteResult });
+    });
+    //[task creator states api calls ]
+    app.get("/taskCreatorsState", async (req, res) => {
+      const email = req.query.email;
+      const user = await usersCollection.findOne({ email });
+      const coins = user?.coins;
+      const tasks = await tasksCollection
+        .find({ "task_creator.creator_email": email })
+        .toArray();
+      const pendingTasks = tasks.reduce(
+        (sum, task) => sum + task.task_quantity,
+        0
+      );
+      const totalPaid = await submissionCollection
+        .aggregate([
+          { $match: { creator_email: email, status: "approve" } },
+          { $group: { _id: null, total: { $sum: "$payment_amount" } } },
+        ])
+        .toArray();
+      const totalPaidAmount = totalPaid[0]?.total || 0;
+      res.send({ coins, pendingTasks, totalPaid: totalPaidAmount });
     });
 
     // Send a ping to confirm a successful connection
