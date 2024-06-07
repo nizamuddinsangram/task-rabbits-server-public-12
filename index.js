@@ -332,6 +332,22 @@ async function run() {
       const result = await tasksCollection.findOne(query);
       res.send(result);
     });
+    //[update a single task task update task Creator ]
+    app.patch("/tasks/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const { task_title, submission_info } = req.body;
+      console.log(task_title, submission_info);
+
+      const updatedDoc = {
+        $set: {
+          task_title,
+          submission_info,
+        },
+      };
+      const updatedTask = await tasksCollection.updateOne(query, updatedDoc);
+      res.send(updatedTask);
+    });
     //post data my submission collection
     app.post("/submission", async (req, res) => {
       const submissionData = req.body;
