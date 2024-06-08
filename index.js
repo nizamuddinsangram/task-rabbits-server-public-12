@@ -74,6 +74,26 @@ async function run() {
       }
       next();
     };
+    const verifyTaskCreator = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isTaskCreator = user?.role === "TaskCreator";
+      if (!isTaskCreator) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+    const verifyWorker = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isWorker = user?.role === "Worker";
+      if (!isWorker) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
     //jwt token related api
 
     // when a user register a account give point and store user data
