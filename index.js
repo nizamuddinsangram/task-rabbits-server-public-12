@@ -33,6 +33,10 @@ async function run() {
     const tasksCollection = client.db("task-rabbit").collection("tasks");
     const paymentCollection = client.db("task-rabbit").collection("payments");
     const withdrawCollection = client.db("task-rabbit").collection("withdraws");
+    const notificationCollection = client
+      .db("task-rabbit")
+      .collection("notifications");
+
     const submissionCollection = client
       .db("task-rabbit")
       .collection("submissions");
@@ -44,9 +48,9 @@ async function run() {
       });
       res.send({ token });
     });
+
     //verify token
     const verifyToken = (req, res, next) => {
-      // console.log(req.headers.authorization);
       if (!req.headers.authorization) {
         return res.status(401).send({ message: "unauthorized access" });
       }
@@ -121,11 +125,12 @@ async function run() {
     });
 
     //find user role from database
-    app.get("/user/:email", verifyToken, async (req, res) => {
+    app.get("/user/:email", async (req, res) => {
+      // console.log(req.headers.authorization);
       const email = req.params.email;
-      if (email !== req.decoded.email) {
-        return res.status(403).send({ message: "unauthorized access" });
-      }
+      // if (email !== req.decoded.email) {
+      //   return res.status(403).send({ message: "unauthorized access" });
+      // }
       const result = await usersCollection.findOne({ email });
       res.send(result);
     });
@@ -209,11 +214,17 @@ async function run() {
       res.send({ result, updateCoinsData });
     });
     //[task creator home page approve and reject button ]
+    //[---------notifications]
     app.patch("/approve/:id", async (req, res) => {
       const id = req.params.id;
-      const { status, payment_amount, worker_email } = req.body;
+      const {
+        status,
+        payment_amount,
+        task_title,
+        task_creator_name,
+        worker_email,
+      } = req.body;
       // console.log(status, payment_amount, worker_email);
-
       const query = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
@@ -232,6 +243,16 @@ async function run() {
           updatedCoins
         );
       }
+
+      //notificaitons
+      const notification = {
+        message: `You have earned ${payment_amount} from ${task_creator_name} for completing ${task_title}`,
+        toEmail: worker_email,
+        time: new Date(),
+        status: "unread",
+      };
+      await notificationCollection.insertOne(notification);
+
       res.send(result);
     });
     //[show all tasks admin and delete task if she/he want ]
