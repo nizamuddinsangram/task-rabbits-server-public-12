@@ -510,6 +510,15 @@ async function run() {
       const totalPaidAmount = totalPaid[0]?.total || 0;
       res.send({ coins, pendingTasks, totalPaid: totalPaidAmount });
     });
+    //[notifications find data ]
+    app.get("/notifications/:email", async (req, res) => {
+      const email = req.params.email;
+      const notification = await notificationCollection
+        .find({ toEmail: email })
+        .sort({ time: -1 })
+        .toArray();
+      res.send(notification);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
