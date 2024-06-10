@@ -8,7 +8,12 @@ const jwt = require("jsonwebtoken");
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://taskrabbit-525e1.web.app",
+      "https://taskrabbit-525e1.firebaseapp.com",
+    ],
   })
 );
 app.use(express.json());
@@ -28,7 +33,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const usersCollection = client.db("task-rabbit").collection("users");
     const tasksCollection = client.db("task-rabbit").collection("tasks");
     const paymentCollection = client.db("task-rabbit").collection("payments");
@@ -481,6 +486,7 @@ async function run() {
     //admin action related api
     //find worker withdraw data from withdraw collection
     //---------------token test-----------------------
+    //[admin home use this api sucure by ]
     app.get(
       "/withDrawConfirmAdmin",
       verifyToken,
@@ -541,7 +547,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
