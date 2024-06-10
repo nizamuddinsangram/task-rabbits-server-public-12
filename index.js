@@ -9,9 +9,9 @@ const jwt = require("jsonwebtoken");
 app.use(
   cors({
     origin: [
+      "https://taskrabbit-525e1.web.app",
       "http://localhost:5173",
       "http://localhost:5174",
-      "https://taskrabbit-525e1.web.app",
       "https://taskrabbit-525e1.firebaseapp.com",
     ],
   })
